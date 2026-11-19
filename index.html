@@ -147,6 +147,16 @@
   .av-jacket:hover{transform:none}
   .av-top h2{font-family:var(--mincho);font-weight:800;font-size:clamp(24px,6vw,32px);letter-spacing:.12em;margin:0}
   .av-sub{color:var(--cream2);font-size:14px;margin:8px 0 16px}
+  .nar{margin:22px 0 4px;padding:16px 16px 18px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid var(--line);text-align:center}
+  .nar-t{font-family:var(--mincho);font-weight:700;font-size:18px;letter-spacing:.12em;color:var(--accent2)}
+  .nar-s{font-size:13px;color:var(--cream2);margin:6px 0 12px;line-height:1.6}
+  .btn-nar{background:none;border:1.5px solid var(--accent);color:var(--accent2);border-radius:26px;padding:11px 24px;font-size:15px;font-weight:700;letter-spacing:.06em}
+  .btn-nar:hover{background:rgba(226,166,90,.12)}
+  .yt{position:relative;width:100%;aspect-ratio:16/9;margin-top:12px;border-radius:8px;overflow:hidden;background:#000}
+  .yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .nar-links{display:flex;justify-content:center;gap:20px;margin-top:12px;font-size:14px}
+  .nar-links a{color:var(--accent2)}
+  .btn-link{background:none;border:0;color:var(--cream2);font-size:14px;text-decoration:underline;padding:0}
   .btn-main{background:var(--accent);color:#2a1a08;border:0;border-radius:28px;padding:13px 28px;font-size:16px;font-weight:700;letter-spacing:.08em;
     box-shadow:0 6px 16px -6px rgba(226,166,90,.7)}
   .btn-main:hover{background:var(--accent2)}
@@ -248,7 +258,7 @@
 <section class="av hidden" id="albumView" aria-modal="true" role="dialog">
   <div class="av-bg" id="avBg"></div>
   <div class="av-scroll">
-    <div class="av-inner" id="avInner"></div>
+    <div class="av-inner" id="avInner"><div id="avTop"></div><div id="avVideo"></div><ol class="tracks" id="avTracks"></ol></div>
   </div>
 </section>
 
@@ -288,6 +298,14 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp
 
 /* ---------- 一覧表の読み込み ---------- */
 const fileUrl = f => f ? encodeURI(String(f).trim()) : "";
+// YouTube の住所から動画の番号を取り出す（youtu.be/… や watch?v=… のどちらでも可）
+function ytId(u) {
+  if (!u) return "";
+  u = String(u).trim();
+  const m = /(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([A-Za-z0-9_-]{11})/.exec(u);
+  if (m) return m[1];
+  return /^[A-Za-z0-9_-]{11}$/.test(u) ? u : "";
+}
 let albums = [];
 if (!Array.isArray(window.ALBUMS)) {
   $("#note").textContent = "albums.js が読み込めません。index.html と同じ場所にあるか、書き方に間違いがないか確かめてください。";
@@ -299,6 +317,7 @@ if (!Array.isArray(window.ALBUMS)) {
     titleTrack: Math.max(0, Math.min((parseInt(a.titleTrack, 10) || 1) - 1, a.tracks.length - 1)),
     jacket: fileUrl(a.jacket),
     tracks: a.tracks.map(t => ({ title: (t && t.title) || "", src: fileUrl(t && t.file) })),
+    youtube: ytId(a.youtube),
   }));
 }
 const getAlbum = id => albums.find(a => a.id === id);
@@ -361,10 +380,12 @@ function openAlbum(id, fromHash) {
   if (!fromHash && location.hash !== "#album-" + id) { try { location.hash = "album-" + id; } catch (e) {} }
   $("#albumView").classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  renderVideo(false);
   renderAlbumView();
 }
 function closeAlbum(fromHash) {
   viewId = null;
+  $("#avVideo").innerHTML = "";
   $("#albumView").classList.add("hidden");
   document.body.style.overflow = "";
   if (!fromHash && location.hash) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; } }
@@ -394,15 +415,37 @@ function renderAlbumView() {
       <div class="tt"><div>${esc(t.title || ("曲 " + (i + 1)))}${i === a.titleTrack ? `<span class="badge">表題曲</span>` : ""}</div></div>
       <span class="pl">${cur && !audio.paused ? "❚❚" : "▶"}</span></li>`;
   }).join("");
-  $("#avInner").innerHTML = `
+  $("#avTop").innerHTML = `
     <div class="av-head"><button class="btn-ghost" data-act="back">‹ 棚にもどる</button></div>
     <div class="av-top">
       <div class="jacket big av-jacket">${caseHtml(a)}</div>
       <h2>${esc(a.title)}</h2>
       <div class="av-sub">${tt && tt.title ? `表題曲「${esc(tt.title)}」・` : ""}全${a.tracks.length}曲</div>
       <button class="btn-main" data-act="playall">${isThis && !audio.paused ? "❚❚ 一時停止" : "▶ 最初から再生"}</button>
-    </div>
-    <ol class="tracks">${list}</ol>`;
+    </div>`;
+  $("#avTracks").innerHTML = list;
+}
+
+/* ---------- ナレーション入り（YouTube） ---------- */
+function renderVideo(show) {
+  const box = $("#avVideo");
+  const a = getAlbum(viewId);
+  if (!a || !a.youtube) { box.innerHTML = ""; return; }
+  const watch = "https://youtu.be/" + a.youtube;
+  if (!show) {
+    box.innerHTML = `<div class="nar">
+      <div class="nar-t">ナレーション入り</div>
+      <div class="nar-s">5曲を、曲の間のナレーションと一緒に通して聞けます</div>
+      <button class="btn-nar" data-act="video">▶ ナレーション入りで聞く</button></div>`;
+  } else {
+    box.innerHTML = `<div class="nar">
+      <div class="nar-t">ナレーション入り</div>
+      <div class="yt"><iframe src="https://www.youtube-nocookie.com/embed/${a.youtube}?autoplay=1&rel=0&playsinline=1"
+        title="${esc(a.title)}（ナレーション入り）" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin"></iframe></div>
+      <div class="nar-links"><a href="${watch}" target="_blank" rel="noopener">YouTubeで開く</a>
+        <button class="btn-link" data-act="videoclose">閉じる</button></div></div>`;
+  }
 }
 $("#avInner").addEventListener("click", e => {
   const a = getAlbum(viewId); if (!a) return;
@@ -410,9 +453,11 @@ $("#avInner").addEventListener("click", e => {
   if (act) {
     const k = act.getAttribute("data-act");
     if (k === "back") closeAlbum();
+    else if (k === "video") { if (!audio.paused) audio.pause(); renderVideo(true); }
+    else if (k === "videoclose") renderVideo(false);
     else if (k === "playall") {
       if (play.albumId === a.id && !audio.paused) audio.pause();
-      else if (play.albumId === a.id && play.index >= 0 && audio.getAttribute("src")) audio.play().catch(() => {});
+      else if (play.albumId === a.id && play.index >= 0 && audio.getAttribute("src")) { if ($("#avVideo iframe")) renderVideo(false); audio.play().catch(() => {}); }
       else startTrack(a.id, 0);
     }
     return;
@@ -432,6 +477,7 @@ function startTrack(albumId, i) {
   if (!a || i < 0 || i >= a.tracks.length) return;
   const t = a.tracks[i];
   if (!t.src) { toast("「" + (t.title || "この曲") + "」のファイル名が一覧表にありません"); return; }
+  if ($("#avVideo iframe")) renderVideo(false);
   play.albumId = albumId; play.index = i;
   audio.src = t.src;
   audio.play().catch(() => updateUI());
@@ -487,6 +533,7 @@ function updateUI() {
 }
 $("#btnPlay").addEventListener("click", () => {
   if (!audio.getAttribute("src")) { if (play.albumId) startTrack(play.albumId, Math.max(0, play.index)); return; }
+  if (audio.paused && $("#avVideo iframe")) renderVideo(false);
   audio.paused ? audio.play().catch(() => {}) : audio.pause();
 });
 $("#btnNext").addEventListener("click", () => nextTrack(false));

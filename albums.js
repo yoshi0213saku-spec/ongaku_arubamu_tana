@@ -12,6 +12,7 @@
      jacket     … ジャケット画像のファイル名（表題曲の画像）
      titleTrack … 表題曲が何曲目か（1〜）
      titlePos   … 題名の位置  "bottom"（下）か "top"（上）
+     youtube    … ナレーション入りの YouTube の住所（なければ行ごと消す）
      tracks     … 曲の一覧  { title: "曲名", file: "ファイル名" }
    ========================================================= */
 
@@ -21,6 +22,7 @@ window.ALBUMS = [
   {
     title: "ふたりの歩いた道",
     jacket: "01-futari.jpg",
+    youtube: "https://youtu.be/HJZTVM8x5Ws",   // ナレーション入り
     titleTrack: 1,
     titlePos: "bottom",
     tracks: [
@@ -36,6 +38,7 @@ window.ALBUMS = [
   {
     title: "故郷の調べ",
     jacket: "02-hurusatosirabe.jpg",
+    youtube: "https://youtu.be/e-AxgD3MCEQ",   // ナレーション入り
     titleTrack: 1,
     titlePos: "bottom",
     tracks: [
@@ -51,6 +54,7 @@ window.ALBUMS = [
   {
     title: "ふるさとの友よ",
     jacket: "03-hurusato-tomoyo.jpg",
+    youtube: "https://youtu.be/iI-KZQ6dDjc",   // ナレーション入り
     titleTrack: 1,
     titlePos: "bottom",
     tracks: [
@@ -66,6 +70,7 @@ window.ALBUMS = [
   // {
   //   title: "4枚目のアルバム名",
   //   jacket: "04-album.jpg",
+  //   youtube: "",
   //   titleTrack: 1,
   //   titlePos: "bottom",
   //   tracks: [
