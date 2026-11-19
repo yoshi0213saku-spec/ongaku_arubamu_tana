@@ -184,6 +184,17 @@
   .btn-main{background:var(--accent);color:#2a1a08;border:0;border-radius:28px;padding:13px 28px;font-size:16px;font-weight:700;letter-spacing:.08em;
     box-shadow:0 6px 16px -6px rgba(226,166,90,.7)}
   .btn-main:hover{background:var(--accent2)}
+  .av-btns{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+  .tmr{position:relative}
+  .btn-tmr{background:rgba(0,0,0,.3);border:1.5px solid var(--line);border-radius:28px;padding:12px 16px;font-size:15px;font-weight:700;color:var(--cream);
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .btn-tmr.on{border-color:var(--accent);color:var(--accent2)}
+  .tmr-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:5;display:flex;flex-direction:column;min-width:150px;
+    background:#2b231e;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.5)}
+  .tmr-menu button{background:none;border:0;border-bottom:1px solid var(--line);padding:13px 16px;font-size:16px;text-align:left}
+  .tmr-menu button:last-child{border-bottom:0}
+  .tmr-menu button:hover{background:rgba(226,166,90,.15)}
+  .tmr-menu .off{color:var(--cream2);font-size:14px}
   .tracks{list-style:none;margin:22px 0 0;padding:0;border-top:1px solid var(--line)}
   .track{display:flex;align-items:center;gap:14px;padding:15px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .15s}
   .track:hover{background:rgba(255,255,255,.05)}
@@ -534,12 +545,53 @@ function renderAlbumView() {
       <div class="jacket big av-jacket">${caseHtml(a)}</div>
       <h2>${esc(a.title)}</h2>
       <div class="av-sub">${tt && tt.title ? `表題曲「${esc(tt.title)}」・` : ""}全${a.tracks.length}曲</div>
-      <button class="btn-main" data-act="playall">${isThis && !audio.paused ? "❚❚ 一時停止" : "▶ 最初から再生"}</button>
+      <div class="av-btns">
+        <button class="btn-main" data-act="playall">${isThis && !audio.paused ? "❚❚ 一時停止" : "▶ 最初から再生"}</button>
+        <div class="tmr">
+          <button class="btn-tmr ${sleep.end ? "on" : ""}" data-act="tmr" aria-label="おやすみタイマー">⏱ <span id="tmrLbl">${sleep.end ? fmtLeft(sleepLeft()) : "タイマー"}</span></button>
+          ${sleep.menu ? `<div class="tmr-menu">
+            <button data-min="15">15分</button><button data-min="20">20分</button><button data-min="30">30分</button>
+            ${sleep.end ? `<button data-min="0" class="off">タイマーを切る</button>` : ""}</div>` : ""}
+        </div>
+      </div>
     </div>`;
   $("#avTracks").innerHTML = list;
 }
 
 /* ---------- ナレーション入り（YouTube） ---------- */
+/* ---------- タイマー（15分・20分・30分で止まる） ---------- */
+const sleep = { end: 0, timer: null, menu: false };
+const sleepLeft = () => sleep.end ? Math.max(0, sleep.end - Date.now()) : 0;
+const fmtLeft = ms => { const s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function setSleep(min) {
+  clearInterval(sleep.timer); sleep.menu = false;
+  if (!min) { sleep.end = 0; if (viewId) renderAlbumView(); toast("タイマーを切りました"); return; }
+  sleep.end = Date.now() + min * 60000;
+  sleep.timer = setInterval(tickSleep, 1000);
+  if (viewId) renderAlbumView();
+  toast(min + "分後に止まります");
+}
+function tickSleep() {
+  const left = sleepLeft();
+  const el = document.getElementById("tmrLbl");
+  if (el) el.textContent = fmtLeft(left);
+  if (left <= 0) { clearInterval(sleep.timer); sleep.end = 0; sleepStop(); }
+}
+function sleepStop() {
+  if ($("#avVideo iframe")) renderVideo(false);
+  if (!audio.paused) {
+    // 10秒かけて音を小さくしてから止める（音量を変えられない端末では、そのまま止まります）
+    const v0 = audio.volume; let n = 0;
+    const f = setInterval(() => {
+      n++;
+      try { audio.volume = Math.max(0, v0 * (1 - n / 20)); } catch (e) {}
+      if (n >= 20) { clearInterval(f); audio.pause(); try { audio.volume = v0; } catch (e) {} }
+    }, 500);
+  }
+  if (viewId) renderAlbumView();
+  toast("タイマーで止めました。おやすみなさい");
+}
+
 function renderVideo(show) {
   const box = $("#avVideo");
   const a = getAlbum(viewId);
@@ -562,11 +614,15 @@ function renderVideo(show) {
 }
 $("#avInner").addEventListener("click", e => {
   const a = getAlbum(viewId); if (!a) return;
+  const mi = e.target.closest("[data-min]");
+  if (mi) { setSleep(+mi.getAttribute("data-min")); return; }
+  if (sleep.menu && !e.target.closest(".tmr")) { sleep.menu = false; renderAlbumView(); }
   const act = e.target.closest("[data-act]");
   if (act) {
     const k = act.getAttribute("data-act");
     if (k === "back") closeAlbum();
     else if (k === "video") { if (!audio.paused) audio.pause(); renderVideo(true); }
+    else if (k === "tmr") { sleep.menu = !sleep.menu; renderAlbumView(); }
     else if (k === "videoclose") renderVideo(false);
     else if (k === "playall") {
       if (play.albumId === a.id && !audio.paused) audio.pause();
