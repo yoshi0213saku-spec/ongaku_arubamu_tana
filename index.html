@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アルバムの棚</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Playfair+Display:ital,wght@1,700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall:#231d19; --wall2:#2e2621;
+    --wood1:#b07a45; --wood2:#80522b; --wood3:#5a3818;
+    --cream:#f3e9d8; --cream2:#cbbba3; --accent:#e2a65a; --accent2:#f0c27f;
+    --panel:#2b231e; --panel2:#3a2f28; --line:rgba(243,233,216,.14);
+    --danger:#d97a6a;
+    --mincho:"Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+    --gothic:"Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--wall);color:var(--cream);font-family:var(--gothic);-webkit-tap-highlight-color:transparent}
+  body{min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(226,166,90,.18), transparent 55%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 2px, transparent 2px 7px),
+      linear-gradient(var(--wall2), var(--wall));
+    padding-bottom:120px;}
+  button{font-family:inherit;color:inherit;cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ===== header ===== */
+  .top{padding:28px 20px 6px;text-align:center}
+  .top h1{font-family:var(--mincho);font-weight:800;font-size:clamp(26px,6vw,40px);letter-spacing:.18em;margin:0;color:var(--cream);
+    text-shadow:0 2px 0 rgba(0,0,0,.4)}
+  .top p{margin:8px 0 0;color:var(--cream2);font-size:14px;letter-spacing:.06em}
+  .note{margin:10px auto 0;max-width:560px;font-size:13px;color:var(--accent2);text-align:center;padding:0 16px}
+
+  /* ===== 木の本棚 ===== */
+  .cabinet{max-width:1100px;margin:34px auto 0;padding:0 10px;filter:drop-shadow(0 22px 26px rgba(0,0,0,.55))}
+  /* 上の飾り（彫刻） */
+  .crown{position:relative;border-radius:10px 10px 0 0;padding:16px 16px 14px;text-align:center;
+    background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#b07842,#8a5728 60%,#6e421d);
+    box-shadow:inset 0 2px 0 rgba(255,222,175,.35), inset 0 -4px 0 rgba(0,0,0,.35)}
+  .crown::before{content:"";position:absolute;left:22%;right:22%;top:-22px;height:24px;border-radius:50% 50% 0 0/100% 100% 0 0;
+    background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#b98148,#a46e3b);box-shadow:inset 0 2px 0 rgba(255,222,175,.35)}
+  .plate{position:relative;display:inline-flex;align-items:center;gap:.6em;padding:8px clamp(16px,5vw,34px);border-radius:8px;
+    box-shadow:inset 0 3px 7px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,222,175,.25), 0 1px 0 rgba(255,222,175,.3)}
+  .carved{font-family:var(--mincho);font-weight:800;color:#4c2c12;letter-spacing:.2em;
+    text-shadow:0 1px 0 rgba(255,214,160,.5), 0 -1px 1px rgba(0,0,0,.55)}
+  .plate h1{margin:0;font-size:clamp(22px,6vw,36px)}
+  .plate-txt{display:flex;flex-direction:column;align-items:center;line-height:1.1}
+  .carved.music{font-family:"Playfair Display",Georgia,serif;font-style:italic;font-weight:700;font-size:clamp(20px,5.4vw,32px);letter-spacing:.08em;margin-bottom:2px}
+  .plate .orn{font-size:clamp(16px,4vw,24px);letter-spacing:0}
+  /* 枠（左右の柱） */
+  .frame{padding:0 clamp(12px,2.8vw,22px);
+    background:var(--gv) 0 0/120px 600px, linear-gradient(90deg,#6a3f1b,#9a6332 18%,#8a5729 50%,#9a6332 82%,#6a3f1b);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  /* 奥の板 */
+  .bay{position:relative;padding:26px clamp(12px,3vw,28px) 0;
+    background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#2c190c,#3d2414 40%,#46291a);
+    box-shadow:inset 0 16px 20px -10px rgba(0,0,0,.85), inset 12px 0 16px -12px rgba(0,0,0,.75), inset -12px 0 16px -12px rgba(0,0,0,.75)}
+  .row{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:clamp(14px,3vw,26px);align-items:end;position:relative}
+  .slot{aspect-ratio:142/125;visibility:hidden}
+  /* 棚板 */
+  .board{position:relative;height:20px;margin:0 calc(-1 * clamp(12px,2.8vw,22px));
+    background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#d29a60 0%,#b07842 22%,#8c5a2b 70%,#6a411c 100%);
+    box-shadow:0 7px 10px -4px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,228,185,.55), inset 0 -2px 0 rgba(0,0,0,.3);z-index:1}
+  .board.last{height:24px}
+  .plinth{height:30px;border-radius:0 0 6px 6px;
+    background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#7a4b22,#5e3817);
+    box-shadow:inset 0 2px 0 rgba(255,222,175,.2), inset 0 -3px 0 rgba(0,0,0,.4)}
+  .plinth::before{content:"";display:block;height:6px;margin:0 8%;}
+  .feet{display:flex;justify-content:space-between;padding:0 4%}
+  .feet i{width:clamp(26px,7vw,44px);height:12px;border-radius:0 0 8px 8px;background:linear-gradient(180deg,#5e3817,#3e230d)}
+
+  /* ===== CDケース（ジュエルケース 142×125mm） ===== */
+  .jacket{position:relative;display:block;width:100%;aspect-ratio:142/125;border:0;padding:0;border-radius:2px;
+    background:linear-gradient(135deg,rgba(210,220,230,.16),rgba(255,255,255,.03) 45%,rgba(0,0,0,.25));
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.30),
+      0 0 0 1px rgba(0,0,0,.55),
+      3px 3px 0 -1px rgba(170,180,190,.45),
+      4px 4px 0 -1px rgba(20,20,22,.75),
+      5px 5px 0 -1px rgba(150,160,170,.25),
+      2px 14px 16px -6px rgba(0,0,0,.8);
+    transform:perspective(700px) rotateX(4deg);transform-origin:50% 100%;transition:transform .25s ease, box-shadow .25s ease}
+  .jacket:hover,.jacket:focus-visible{transform:perspective(700px) rotateX(0deg) translateY(-8px);outline:none}
+  .jacket:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+  .jacket:active{transform:perspective(700px) translateY(-3px) scale(.98)}
+  .case-cover{position:absolute;left:9.6%;top:3.4%;right:2.6%;bottom:3.4%;overflow:hidden;background:#3a302a;
+    box-shadow:0 0 0 1px rgba(0,0,0,.45), 0 0 4px rgba(0,0,0,.4)}
+  .case-cover{container-type:inline-size}
+  .jk-credit{position:absolute;right:4%;bottom:2.6%;z-index:1;font-family:var(--mincho);font-weight:700;color:#fff;
+    font-size:9px;font-size:3.6cqw;letter-spacing:.12em;white-space:nowrap;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+  .jk-title.bottom{padding-bottom:12%}
+  .case-spine{position:absolute;left:0;top:0;bottom:0;width:7.6%;border-radius:2px 0 0 2px;
+    background:
+      repeating-linear-gradient(90deg,rgba(255,255,255,.22) 0 1px,rgba(0,0,0,.28) 1px 3px),
+      linear-gradient(90deg,rgba(28,30,34,.92),rgba(92,98,106,.8) 45%,rgba(40,42,46,.9) 70%,rgba(18,19,22,.95));
+    box-shadow:inset -1px 0 0 rgba(255,255,255,.45), 1px 0 0 rgba(0,0,0,.55)}
+  .case-spine::before,.case-spine::after{content:"";position:absolute;left:28%;right:-38%;height:8.5%;border-radius:1px 3px 3px 1px;
+    background:linear-gradient(90deg,rgba(220,228,235,.55),rgba(160,168,176,.35));box-shadow:inset 0 0 0 1px rgba(255,255,255,.35), 0 1px 1px rgba(0,0,0,.4)}
+  .case-spine::before{top:3.5%}
+  .case-spine::after{bottom:3.5%}
+  .case-gloss{position:absolute;inset:0;pointer-events:none;border-radius:2px;z-index:1;
+    background:
+      linear-gradient(112deg,rgba(255,255,255,.34) 0%,rgba(255,255,255,.10) 21%,rgba(255,255,255,0) 22%,rgba(255,255,255,0) 60%,rgba(255,255,255,.12) 61%,rgba(255,255,255,.03) 74%,rgba(255,255,255,0) 75%),
+      linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 5%),
+      linear-gradient(90deg,rgba(255,255,255,0) 96%,rgba(255,255,255,.22) 98%,rgba(255,255,255,0));
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.25), inset 2px 2px 0 0 rgba(255,255,255,.10), inset -1px -1px 0 0 rgba(0,0,0,.35)}
+  .jk-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .jk-ph{position:absolute;inset:0}
+  .jk-title{position:absolute;left:0;right:0;padding:14% 8% 7%;font-family:var(--mincho);font-weight:800;color:#fff;
+    font-size:clamp(10px,2.8vw,14.8px);line-height:1.3;letter-spacing:.08em;text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 14px rgba(0,0,0,.5);word-break:break-word}
+  .jk-title.bottom{bottom:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,rgba(0,0,0,0))}
+  .jk-title.top{top:0;padding:7% 8% 14%;background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.5) 55%,rgba(0,0,0,0))}
+  .jk-tracks{display:inline-block;max-width:100%;text-align:left;vertical-align:top;list-style:none;margin:.5em 0 0;padding:0;font-family:var(--mincho);font-weight:700;font-size:.596em;line-height:1.5;letter-spacing:.06em}
+  .jk-tracks li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .jk-tracks li span{display:inline-block;min-width:1.4em;text-align:right;margin-right:.5em;opacity:.8;font-weight:500}
+  .jk-title small{display:block;font-family:var(--gothic);font-weight:500;font-size:.52em;letter-spacing:.12em;opacity:.9;margin-top:.35em}
+  .big .jk-title{font-size:clamp(14.8px,4.28vw,22.8px)}
+  .playing-badge{position:absolute;top:8px;right:8px;z-index:3;background:rgba(0,0,0,.6);border-radius:20px;padding:4px 8px;display:flex;gap:2px;align-items:flex-end;height:22px}
+  .playing-badge i{width:3px;background:var(--accent2);border-radius:1px;animation:eq 1s ease-in-out infinite}
+  .playing-badge i:nth-child(2){animation-delay:.2s}.playing-badge i:nth-child(3){animation-delay:.4s}
+  @keyframes eq{0%,100%{height:4px}50%{height:13px}}
+  .paused .playing-badge i,.paused .eq i{animation-play-state:paused}
+
+  .add-slot{width:100%;aspect-ratio:142/125;border:2px dashed rgba(243,233,216,.3);border-radius:4px;background:rgba(255,255,255,.03);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--cream2);font-size:14px;letter-spacing:.06em;transition:.2s}
+  .add-slot b{font-size:34px;font-weight:400;line-height:1;color:var(--accent)}
+  .add-slot:hover{border-color:var(--accent);color:var(--cream);background:rgba(226,166,90,.08)}
+  .empty-msg{grid-column:1/-1;align-self:center;text-align:center;color:var(--cream2);font-size:14px;line-height:1.9;padding:6px 0 10px}
+
+  /* ===== album view ===== */
+  .av{position:fixed;inset:0;z-index:20;background:#1b1613;overflow:hidden;animation:fadein .25s ease}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .av-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(36px) brightness(.38) saturate(1.2);transform:scale(1.1)}
+  .av-scroll{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 150px}
+  .av-inner{max-width:720px;margin:0 auto;padding:12px 18px}
+  .av-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 10px}
+  .btn-ghost{background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:22px;padding:9px 16px;font-size:15px}
+  .btn-ghost:hover{background:rgba(255,255,255,.1)}
+  .av-actions{display:flex;gap:8px}
+  .av-top{display:flex;flex-direction:column;align-items:center;text-align:center}
+  .av-jacket{width:min(86vw,400px);margin:6px 0 18px;transform:none !important;cursor:default}
+  .av-jacket:hover{transform:none}
+  .av-top h2{font-family:var(--mincho);font-weight:800;font-size:clamp(24px,6vw,32px);letter-spacing:.12em;margin:0}
+  .av-sub{color:var(--cream2);font-size:14px;margin:8px 0 16px}
+  .btn-main{background:var(--accent);color:#2a1a08;border:0;border-radius:28px;padding:13px 28px;font-size:16px;font-weight:700;letter-spacing:.08em;
+    box-shadow:0 6px 16px -6px rgba(226,166,90,.7)}
+  .btn-main:hover{background:var(--accent2)}
+  .tracks{list-style:none;margin:22px 0 0;padding:0;border-top:1px solid var(--line)}
+  .track{display:flex;align-items:center;gap:14px;padding:15px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:6px;transition:background .15s}
+  .track:hover{background:rgba(255,255,255,.05)}
+  .track .no{width:26px;text-align:center;color:var(--cream2);font-family:var(--mincho);font-size:17px;flex:none}
+  .track .tt{flex:1;min-width:0}
+  .track .tt div{font-size:17px;line-height:1.4;word-break:break-word}
+  .track .tt span{display:inline-block;margin-top:4px;font-size:11.5px;color:var(--cream2)}
+  .badge{display:inline-block;font-size:11px;border:1px solid var(--accent);color:var(--accent2);border-radius:10px;padding:1px 8px;margin-left:8px;vertical-align:2px;letter-spacing:.05em}
+  .track.cur{background:rgba(226,166,90,.13)}
+  .track.cur .tt div{color:var(--accent2);font-weight:700}
+  .track.missing{opacity:.5}
+  .eq{display:flex;gap:2px;align-items:flex-end;height:16px;justify-content:center}
+  .eq i{width:3px;background:var(--accent2);border-radius:1px;animation:eq 1s ease-in-out infinite}
+  .eq i:nth-child(2){animation-delay:.2s}.eq i:nth-child(3){animation-delay:.4s}
+  .track .pl{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--cream2)}
+
+  /* ===== player ===== */
+  .player{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(30,24,20,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);padding:8px 14px calc(10px + env(safe-area-inset-bottom))}
+  .pl-wrap{max-width:720px;margin:0 auto}
+  .pl-row{display:flex;align-items:center;gap:12px}
+  .pl-thumb{width:46px;height:46px;border-radius:3px;flex:none;position:relative;overflow:hidden;border:0;padding:0;background:#3a302a}
+  .pl-thumb img,.pl-thumb .jk-ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .pl-info{flex:1;min-width:0;background:none;border:0;text-align:left;padding:0}
+  .pl-info b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pl-info span{display:block;font-size:12px;color:var(--cream2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .pl-btns{display:flex;align-items:center;gap:4px;flex:none}
+  .ic{width:42px;height:42px;border-radius:50%;border:0;background:none;display:flex;align-items:center;justify-content:center}
+  .ic:hover{background:rgba(255,255,255,.08)}
+  .ic svg{width:22px;height:22px;fill:var(--cream)}
+  .ic.play{width:48px;height:48px;background:var(--accent)}
+  .ic.play svg{fill:#2a1a08;width:24px;height:24px}
+  .ic.play:hover{background:var(--accent2)}
+  .seek{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:11.5px;color:var(--cream2);font-variant-numeric:tabular-nums}
+  .seek input{flex:1;accent-color:var(--accent);height:20px}
+
+  /* ===== modal ===== */
+  .modal{position:fixed;inset:0;z-index:50;background:rgba(10,8,6,.72);display:flex;align-items:flex-end;justify-content:center;animation:fadein .2s}
+  @media (min-width:700px){.modal{align-items:center}}
+  .sheet{background:var(--panel);width:100%;max-width:620px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px 18px 26px;border:1px solid var(--line)}
+  @media (min-width:700px){.sheet{border-radius:16px}}
+  .sheet h3{font-family:var(--mincho);font-size:21px;letter-spacing:.1em;margin:0 0 14px}
+  .fld{margin:0 0 16px}
+  .fld>label.lb{display:block;font-size:13px;color:var(--cream2);margin-bottom:6px;letter-spacing:.05em}
+  .inp{width:100%;font-size:16px;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:#1f1915;color:var(--cream);font-family:inherit}
+  .inp:focus{outline:none;border-color:var(--accent)}
+  .jk-edit{display:flex;gap:14px;align-items:flex-start}
+  .jk-edit .jacket{width:150px;flex:none;transform:none}
+  .jk-edit .jk-title{font-size:9px}
+  .filebtn{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 13px;font-size:14px;cursor:pointer}
+  .filebtn:hover{border-color:var(--accent)}
+  /* 入力欄そのものを透明にしてボタンの上に重ねる（スマホのアプリ内で開かない問題への対策） */
+  .filebtn input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:200px;z-index:2}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-top:10px}
+  .seg button{background:none;border:0;padding:7px 11px;font-size:13px;white-space:nowrap}
+  .seg button.on{background:var(--accent);color:#2a1a08;font-weight:700}
+  .hint{font-size:12.5px;color:var(--cream2);line-height:1.7;margin:6px 0 0}
+  .hint b{color:var(--accent2);font-weight:500}
+  .tr-edit{border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:10px;background:#251e1a}
+  .tr-edit.is-title{border-color:var(--accent)}
+  .tr-line{display:flex;align-items:center;gap:8px}
+  .tr-line .num{width:22px;text-align:center;font-family:var(--mincho);color:var(--cream2);flex:none}
+  .tr-line .inp{padding:9px 10px}
+  .tr-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;padding-left:30px}
+  .tr-file{font-size:12px;color:var(--cream2);flex:1;min-width:120px;word-break:break-all}
+  .tr-file.ok{color:#a8d08d}
+  .radio{display:inline-flex;align-items:center;gap:5px;font-size:13px;cursor:pointer;white-space:nowrap}
+  .radio input{accent-color:var(--accent);width:17px;height:17px}
+  .x{background:none;border:0;color:var(--cream2);font-size:20px;width:32px;height:32px;border-radius:50%;flex:none}
+  .x:hover{background:rgba(255,255,255,.08)}
+  .row-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+  .btn-sub{background:none;border:1px solid var(--line);border-radius:24px;padding:11px 20px;font-size:15px}
+  .btn-danger{background:var(--danger);border:0;color:#2a0f0a;border-radius:24px;padding:11px 20px;font-size:15px;font-weight:700}
+  .err{color:var(--danger);font-size:13px;min-height:1em;margin-top:8px}
+  .progress{font-size:13px;color:var(--accent2);margin-top:8px}
+
+  .toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);z-index:60;background:#f3e9d8;color:#2a1a08;padding:11px 18px;border-radius:24px;font-size:14px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:88vw;text-align:center;line-height:1.5;animation:fadein .2s}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <p>ジャケットにふれると、アルバムが開きます</p>
+  <div class="note" id="note"></div>
+</header>
+
+<div class="cabinet">
+  <div class="crown"><div class="plate"><span class="carved orn">❦</span><div class="plate-txt"><span class="carved music">Music</span><h1 class="carved">アルバムの棚</h1></div><span class="carved orn" style="transform:scaleX(-1)">❦</span></div></div>
+  <main class="frame" id="shelf" aria-label="アルバムの棚"></main>
+  <div class="plinth"></div>
+  <div class="feet"><i></i><i></i></div>
+</div>
+
+<!-- album view -->
+<section class="av hidden" id="albumView" aria-modal="true" role="dialog">
+  <div class="av-bg" id="avBg"></div>
+  <div class="av-scroll">
+    <div class="av-inner" id="avInner"></div>
+  </div>
+</section>
+
+<!-- player -->
+<div class="player hidden" id="player">
+  <div class="pl-wrap">
+    <div class="pl-row">
+      <button class="pl-thumb" id="plThumb" aria-label="アルバムを開く"></button>
+      <button class="pl-info" id="plInfo"><b id="plTitle"></b><span id="plAlbum"></span></button>
+      <div class="pl-btns">
+        <button class="ic" id="btnPrev" aria-label="前の曲"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+        <button class="ic play" id="btnPlay" aria-label="再生"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 4v16l13-8z"/></svg></button>
+        <button class="ic" id="btnNext" aria-label="次の曲"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+      </div>
+    </div>
+    <div class="seek"><span id="tCur">0:00</span><input type="range" id="seek" min="0" max="100" step="0.1" value="0" aria-label="再生位置"><span id="tDur">0:00</span></div>
+  </div>
+</div>
+
+<audio id="audio" preload="auto" playsinline></audio>
+
+<script src="albums.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- 木目 ---------- */
+(function woodGrain() {
+  const svg = (w, h, fx, fy, seed) => `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><filter id='f' x='0' y='0' width='100%' height='100%'><feTurbulence type='fractalNoise' baseFrequency='${fx} ${fy}' numOctaves='4' seed='${seed}' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.24  0 0 0 0 0.13  0 0 0 0 0.05  0 0 0 1.6 -0.55'/></filter><rect width='100%' height='100%' filter='url(#f)'/></svg>`;
+  const u = s => `url("data:image/svg+xml,${encodeURIComponent(s)}")`;
+  const r = document.documentElement.style;
+  r.setProperty("--gh", u(svg(600, 120, 0.0035, 0.11, 7)));
+  r.setProperty("--gv", u(svg(120, 600, 0.11, 0.0035, 11)));
+})();
+
+/* ---------- 一覧表の読み込み ---------- */
+const fileUrl = f => f ? encodeURI(String(f).trim()) : "";
+let albums = [];
+if (!Array.isArray(window.ALBUMS)) {
+  $("#note").textContent = "albums.js が読み込めません。index.html と同じ場所にあるか、書き方に間違いがないか確かめてください。";
+} else {
+  albums = window.ALBUMS.filter(a => a && Array.isArray(a.tracks)).map((a, i) => ({
+    id: String(i + 1),
+    title: a.title || "",
+    titlePos: a.titlePos === "top" ? "top" : "bottom",
+    titleTrack: Math.max(0, Math.min((parseInt(a.titleTrack, 10) || 1) - 1, a.tracks.length - 1)),
+    jacket: fileUrl(a.jacket),
+    tracks: a.tracks.map(t => ({ title: (t && t.title) || "", src: fileUrl(t && t.file) })),
+  }));
+}
+const getAlbum = id => albums.find(a => a.id === id);
+
+/* ---------- ジャケット ---------- */
+function hash(s) { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h); }
+function phStyle(seed) {
+  const h = hash(seed) % 360;
+  return `background:radial-gradient(circle at 30% 25%,hsl(${(h+40)%360} 45% 58%),transparent 60%),linear-gradient(160deg,hsl(${h} 38% 38%),hsl(${(h+200)%360} 30% 16%))`;
+}
+function jacketInner(a) {
+  const img = `<div class="jk-ph" style="${phStyle(a.title || "♪")}"></div>` + (a.jacket ? `<img class="jk-img" src="${esc(a.jacket)}" alt="">` : "");
+  const names = a.tracks.map(t => t.title.trim()).filter(Boolean);
+  const list = names.length ? `<div><ol class="jk-tracks">${names.map((n, i) => `<li><span>${i + 1}.</span>${esc(n)}</li>`).join("")}</ol></div>` : "";
+  const title = a.title ? `<div class="jk-title ${a.titlePos}">${esc(a.title)}${list}</div>` : "";
+  return img + title + `<span class="jk-credit">作　中島　義健</span>`;
+}
+const caseHtml = a => `<span class="case-cover">${jacketInner(a)}</span><span class="case-spine"></span><span class="case-gloss"></span>`;
+// 画像が見つからないときは、色の見本を表示
+document.addEventListener("error", e => {
+  const t = e.target;
+  if (t && t.tagName === "IMG" && t.classList.contains("jk-img")) t.remove();
+}, true);
+
+/* ---------- 棚 ---------- */
+let cols = 0;
+const play = { albumId: null, index: -1 };
+let viewId = null;
+const audio = $("#audio");
+
+function calcCols() { const w = window.innerWidth; return w >= 1000 ? 5 : w >= 760 ? 4 : w >= 520 ? 3 : 2; }
+function renderShelf() {
+  cols = calcCols();
+  const MIN_ROWS = 3;
+  const fill = n => Array.from({ length: Math.max(0, n) }, () => `<div class="slot"></div>`).join("");
+  const bay = (inner, last) => `<div class="bay"><div class="row" style="--cols:${cols}">${inner}</div></div><div class="board${last ? " last" : ""}"></div>`;
+  const items = albums.map(a => {
+    const on = play.albumId === a.id;
+    return `<button class="jacket ${on && audio.paused ? "paused" : ""}" data-open="${a.id}" aria-label="${esc(a.title)} を開く">
+      ${caseHtml(a)}${on ? `<span class="playing-badge"><i></i><i></i><i></i></span>` : ""}</button>`;
+  });
+  const rows = Math.max(MIN_ROWS, Math.ceil(items.length / cols));
+  let html = "";
+  for (let r = 0; r < rows; r++) {
+    const part = items.slice(r * cols, r * cols + cols);
+    html += bay(part.join("") + fill(cols - part.length), r === rows - 1);
+  }
+  $("#shelf").innerHTML = html;
+}
+$("#shelf").addEventListener("click", e => {
+  const o = e.target.closest("[data-open]");
+  if (o) openAlbum(o.getAttribute("data-open"));
+});
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (calcCols() !== cols) renderShelf(); }, 150); });
+
+/* ---------- アルバムを開く ---------- */
+function openAlbum(id, fromHash) {
+  if (!getAlbum(id)) return;
+  viewId = id;
+  if (!fromHash && location.hash !== "#album-" + id) { try { location.hash = "album-" + id; } catch (e) {} }
+  $("#albumView").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  renderAlbumView();
+}
+function closeAlbum(fromHash) {
+  viewId = null;
+  $("#albumView").classList.add("hidden");
+  document.body.style.overflow = "";
+  if (!fromHash && location.hash) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { location.hash = ""; } }
+  renderShelf();
+}
+function routeHash() {
+  const m = /^#album-(\d+)$/.exec(location.hash);
+  if (m && getAlbum(m[1])) { if (viewId !== m[1]) openAlbum(m[1], true); }
+  else if (viewId) closeAlbum(true);
+}
+window.addEventListener("hashchange", routeHash);
+
+function renderAlbumView() {
+  const a = getAlbum(viewId);
+  if (!a) { closeAlbum(); return; }
+  const bg = $("#avBg");
+  bg.removeAttribute("style");
+  if (a.jacket) bg.style.backgroundImage = `url("${a.jacket}"), linear-gradient(#2a3a30,#141a16)`;
+  else bg.setAttribute("style", phStyle(a.title) + ";filter:blur(30px) brightness(.35)");
+  const tt = a.tracks[a.titleTrack];
+  const isThis = play.albumId === a.id;
+  const list = a.tracks.map((t, i) => {
+    const cur = isThis && play.index === i;
+    const lead = cur ? `<span class="eq ${audio.paused ? "paused" : ""}"><i></i><i></i><i></i></span>` : (i + 1);
+    return `<li class="track ${cur ? "cur" : ""}" data-i="${i}">
+      <span class="no">${lead}</span>
+      <div class="tt"><div>${esc(t.title || ("曲 " + (i + 1)))}${i === a.titleTrack ? `<span class="badge">表題曲</span>` : ""}</div></div>
+      <span class="pl">${cur && !audio.paused ? "❚❚" : "▶"}</span></li>`;
+  }).join("");
+  $("#avInner").innerHTML = `
+    <div class="av-head"><button class="btn-ghost" data-act="back">‹ 棚にもどる</button></div>
+    <div class="av-top">
+      <div class="jacket big av-jacket">${caseHtml(a)}</div>
+      <h2>${esc(a.title)}</h2>
+      <div class="av-sub">${tt && tt.title ? `表題曲「${esc(tt.title)}」・` : ""}全${a.tracks.length}曲</div>
+      <button class="btn-main" data-act="playall">${isThis && !audio.paused ? "❚❚ 一時停止" : "▶ 最初から再生"}</button>
+    </div>
+    <ol class="tracks">${list}</ol>`;
+}
+$("#avInner").addEventListener("click", e => {
+  const a = getAlbum(viewId); if (!a) return;
+  const act = e.target.closest("[data-act]");
+  if (act) {
+    const k = act.getAttribute("data-act");
+    if (k === "back") closeAlbum();
+    else if (k === "playall") {
+      if (play.albumId === a.id && !audio.paused) audio.pause();
+      else if (play.albumId === a.id && play.index >= 0 && audio.getAttribute("src")) audio.play().catch(() => {});
+      else startTrack(a.id, 0);
+    }
+    return;
+  }
+  const tr = e.target.closest(".track");
+  if (tr) {
+    const i = +tr.getAttribute("data-i");
+    if (play.albumId === a.id && play.index === i) { audio.paused ? audio.play().catch(() => {}) : audio.pause(); }
+    else startTrack(a.id, i);
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && viewId) closeAlbum(); });
+
+/* ---------- 再生 ---------- */
+function startTrack(albumId, i) {
+  const a = getAlbum(albumId);
+  if (!a || i < 0 || i >= a.tracks.length) return;
+  const t = a.tracks[i];
+  if (!t.src) { toast("「" + (t.title || "この曲") + "」のファイル名が一覧表にありません"); return; }
+  play.albumId = albumId; play.index = i;
+  audio.src = t.src;
+  audio.play().catch(() => updateUI());
+  setMediaSession(a, t);
+  updateUI();
+}
+function nextTrack(auto) {
+  const a = getAlbum(play.albumId); if (!a) return;
+  if (play.index + 1 < a.tracks.length) startTrack(a.id, play.index + 1);
+  else if (auto) { play.index = 0; audio.src = a.tracks[0].src || ""; audio.pause(); updateUI(); }
+}
+function prevTrack() {
+  const a = getAlbum(play.albumId); if (!a) return;
+  if (audio.currentTime > 3 || play.index === 0) { audio.currentTime = 0; return; }
+  startTrack(a.id, play.index - 1);
+}
+audio.addEventListener("ended", () => nextTrack(true));
+audio.addEventListener("play", updateUI);
+audio.addEventListener("pause", updateUI);
+audio.addEventListener("error", () => {
+  const a = getAlbum(play.albumId), t = a && a.tracks[play.index];
+  if (t && audio.getAttribute("src")) toast("「" + (t.title || "この曲") + "」を再生できません。ファイル名（" + decodeURI(t.src) + "）を確かめてください");
+});
+audio.addEventListener("loadedmetadata", updateTime);
+audio.addEventListener("timeupdate", updateTime);
+
+const fmt = s => { if (!isFinite(s)) return "0:00"; s = Math.floor(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+let seeking = false;
+function updateTime() {
+  if (seeking) return;
+  const d = audio.duration || 0;
+  $("#seek").max = d || 100; $("#seek").value = audio.currentTime || 0;
+  $("#tCur").textContent = fmt(audio.currentTime); $("#tDur").textContent = fmt(d);
+}
+$("#seek").addEventListener("input", () => { seeking = true; $("#tCur").textContent = fmt(+$("#seek").value); });
+$("#seek").addEventListener("change", () => { seeking = false; try { audio.currentTime = +$("#seek").value; } catch (e) {} });
+
+function updateUI() {
+  const a = getAlbum(play.albumId);
+  const pl = $("#player");
+  if (!a || play.index < 0) pl.classList.add("hidden");
+  else {
+    pl.classList.remove("hidden");
+    const t = a.tracks[play.index];
+    $("#plTitle").textContent = (t && t.title) || "";
+    $("#plAlbum").textContent = a.title;
+    $("#plThumb").innerHTML = `<div class="jk-ph" style="${phStyle(a.title)}"></div>` + (a.jacket ? `<img src="${esc(a.jacket)}" alt="" onerror="this.remove()">` : "");
+    $("#playIcon").innerHTML = audio.paused ? '<path d="M7 4v16l13-8z"/>' : '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+    $("#btnPlay").setAttribute("aria-label", audio.paused ? "再生" : "一時停止");
+  }
+  if (viewId) renderAlbumView(); else renderShelf();
+  if ("mediaSession" in navigator) try { navigator.mediaSession.playbackState = audio.paused ? "paused" : "playing"; } catch (e) {}
+}
+$("#btnPlay").addEventListener("click", () => {
+  if (!audio.getAttribute("src")) { if (play.albumId) startTrack(play.albumId, Math.max(0, play.index)); return; }
+  audio.paused ? audio.play().catch(() => {}) : audio.pause();
+});
+$("#btnNext").addEventListener("click", () => nextTrack(false));
+$("#btnPrev").addEventListener("click", prevTrack);
+$("#plThumb").addEventListener("click", () => { if (play.albumId) openAlbum(play.albumId); });
+$("#plInfo").addEventListener("click", () => { if (play.albumId) openAlbum(play.albumId); });
+
+function setMediaSession(a, t) {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: t.title || "", album: a.title || "", artist: a.title || "",
+      artwork: a.jacket ? [{ src: new URL(a.jacket, location.href).href, sizes: "512x512" }] : []
+    });
+    navigator.mediaSession.setActionHandler("play", () => audio.play().catch(() => {}));
+    navigator.mediaSession.setActionHandler("pause", () => audio.pause());
+    navigator.mediaSession.setActionHandler("previoustrack", prevTrack);
+    navigator.mediaSession.setActionHandler("nexttrack", () => nextTrack(false));
+  } catch (e) {}
+}
+
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 4000);
+}
+
+renderShelf();
+routeHash();
+})();
+</script>
+</body>
+</html>
