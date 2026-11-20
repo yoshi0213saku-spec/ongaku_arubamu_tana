@@ -41,7 +41,7 @@
   .crown{position:relative;border-radius:10px 10px 0 0;padding:16px 16px 14px;text-align:center;
     background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#b07842,#8a5728 60%,#6e421d);
     box-shadow:inset 0 2px 0 rgba(255,222,175,.35), inset 0 -4px 0 rgba(0,0,0,.35)}
-  .crown::before{content:"";position:absolute;left:max(30%, 150px);right:max(30%, 150px);top:-22px;height:24px;border-radius:50% 50% 0 0/100% 100% 0 0;
+  .crown::before{content:"";position:absolute;left:22%;right:22%;top:-22px;height:24px;border-radius:50% 50% 0 0/100% 100% 0 0;
     background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#b98148,#a46e3b);box-shadow:inset 0 2px 0 rgba(255,222,175,.35)}
   .plate{position:relative;display:inline-flex;align-items:center;gap:.6em;padding:8px clamp(16px,5vw,34px);border-radius:8px;
     box-shadow:inset 0 3px 7px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,222,175,.25), 0 1px 0 rgba(255,222,175,.3)}
@@ -70,17 +70,7 @@
     background:var(--gh) 0 0/600px 120px, linear-gradient(180deg,#7a4b22,#5e3817);
     box-shadow:inset 0 2px 0 rgba(255,222,175,.2), inset 0 -3px 0 rgba(0,0,0,.4)}
   .plinth::before{content:"";display:block;height:6px;margin:0 8%;}
-  /* ===== ポトス ===== */
   html,body{overflow-x:hidden}
-  .cabinet{position:relative;margin-top:96px !important}
-  .pothos{position:absolute;top:-72px;width:170px;height:720px;pointer-events:none;z-index:4;
-    filter:drop-shadow(2px 4px 3px rgba(0,0,0,.45))}
-  .pothos.left{left:-6px}
-  .pothos.right{right:-6px;transform:scaleX(-1)}
-  .pothos svg{display:block;width:100%;height:100%;overflow:visible}
-  .pothos .sw{animation:sway 7s ease-in-out infinite alternate}
-  @keyframes sway{from{transform:rotate(-1.1deg)}to{transform:rotate(1.1deg)}}
-  @media (prefers-reduced-motion:reduce){.pothos .sw{animation:none}}
   /* ===== 空いた場所の飾り（イーゼルに立てた絵） ===== */
   .decor{position:relative;aspect-ratio:142/125;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
   .easel{position:relative;width:88%;padding-bottom:14%}
@@ -341,91 +331,6 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp
   r.setProperty("--gv", u(svg(120, 600, 0.11, 0.0035, 11)));
 })();
 
-/* ---------- ポトス（上の左右の鉢から、つるが垂れ下がる） ---------- */
-(function pothos() {
-  function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
-  const LEAF = "M0 0 C -5 -1.5 -11.5 4 -10 11.5 C -8.6 18.5 -2.6 22 0 27 C 2.6 22 8.6 18.5 10 11.5 C 11.5 4 5 -1.5 0 0 Z";
-  const GREENS = ["#2e7a30", "#3a8a36", "#46993d", "#2a6c2b", "#529f42", "#367f33"];
-  function leaf(r, x, y, ang, sc) {
-    const g = GREENS[Math.floor(r() * GREENS.length)];
-    const vari = r() < 0.45 ? `<path d="M0 3 C -3 9 -2 16 0 22 C 1 15 3 9 0 3Z" fill="#d8e27a" opacity="${(0.35 + r() * 0.3).toFixed(2)}"/>` : "";
-    return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${ang.toFixed(1)}) scale(${sc.toFixed(2)})">
-      <path d="${LEAF}" fill="${g}" stroke="#1f5520" stroke-width=".6"/>${vari}
-      <path d="M0 1 L0 24" stroke="#bfe08a" stroke-width=".7" opacity=".55" fill="none"/>
-      <path d="M-9 8 C -6 6 -3 3 0 1" stroke="#ffffff" stroke-width="1.2" opacity=".18" fill="none"/></g>`;
-  }
-  function strand(r, sx, sy, ex, ey, base, len, amp, ph, delay) {
-    // 鉢のふちから横へ伸びて（棚の上の板の上をはう）、端から下へ垂れる
-    const pts = [];
-    // 鉢のふちを越えて外へ出て、板の上に下り、板の上を横にはう
-    const p1 = [sx - 22, sy - 10], p2 = [sx - 34, ey - 1];
-    for (let i = 0; i <= 14; i++) {
-      const t = i / 14, m = 1 - t;
-      pts.push([m * m * sx + 2 * m * t * p1[0] + t * t * p2[0], m * m * sy + 2 * m * t * p1[1] + t * t * p2[1]]);
-    }
-    for (let i = 1; i <= 10; i++) {
-      const t = i / 10;
-      pts.push([p2[0] + (ex - p2[0]) * t, p2[1] + (ey - p2[1]) * t - Math.sin(Math.PI * t) * 1.5]);
-    }
-    const NA = pts.length - 1;
-    const NB = 70;
-    for (let i = 1; i <= NB; i++) {
-      const u = i / NB;
-      const x = ex + (base - ex) * (1 - Math.exp(-u * 9)) + amp * Math.sin(u * 7 + ph) * Math.min(1, u * 4);
-      pts.push([x, ey + u * len]);
-    }
-    const d = "M" + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
-    let leaves = "", side = r() < .5 ? 1 : -1, acc = 0, next = 6 + r() * 6;
-    for (let i = 1; i < pts.length; i++) {
-      acc += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-      if (acc < next) continue;
-      next = acc + 15 + r() * 7;
-      const [x, y] = pts[i];
-      const horiz = i <= NA;
-      const prog = horiz ? 0 : (i - NA) / NB;
-      const sc = horiz ? 0.95 + r() * 0.15 : 0.95 - prog * 0.45 + r() * 0.12;
-      const ang = horiz ? (r() - 0.5) * 50 + side * 15 : side * (35 + r() * 35);
-      leaves += leaf(r, x + (horiz ? 0 : side * 1.5), y + (horiz ? 1 : 0), ang, sc);
-      side = -side;
-    }
-    const last = pts[pts.length - 1];
-    leaves += leaf(r, last[0], last[1] - 2, (r() - .5) * 20, 0.42);
-    return `<g class="sw" style="transform-origin:${ex}px ${ey}px;animation-delay:${delay}s">
-      <path d="${d}" fill="none" stroke="#4d7b2b" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>${leaves}</g>`;
-  }
-  function svg(seed) {
-    const r = rng(seed);
-    const potL = 72, potR = 136, potTop = 28, potBot = 72; // 鉢（棚の上の板 y=72 に乗る・板の内側）
-    const cx = (potL + potR) / 2;
-    let s = "";
-    // 横へ伸びて、棚の端から垂れ下がるつる
-    s += strand(r, potL + 6, potTop + 2, 18, 71, 24, 600, 7, 0.4, 0);
-    s += strand(r, potL + 10, potTop + 1, 10, 70, 12, 460, 9, 2.1, -2.5);
-    s += strand(r, potL + 3, potTop + 3, 26, 72, 34, 320, 8, 4.0, -1.2);
-    s += strand(r, potL + 14, potTop + 1, 6, 69, 4, 200, 6, 1.0, -3.6);
-    // 鉢から上に茂る葉
-    let top = "";
-    const tops = [[-70, 1.05], [-45, 1.15], [-22, 1.2], [0, 1.25], [22, 1.2], [45, 1.15], [70, 1.05], [-90, .95], [95, .95], [-10, 1.0], [12, 1.0]];
-    for (const [a, sc] of tops) {
-      const rad = (a - 90) * Math.PI / 180;
-      top += leaf(r, cx + Math.cos(rad) * 9 + (r() - .5) * 6, potTop + 3 + Math.sin(rad) * 3, a + 180, sc * (0.85 + r() * 0.2));
-    }
-    const pot = `
-      <defs><linearGradient id="pt${seed}" x1="0" x2="1"><stop offset="0" stop-color="#8f4a26"/><stop offset=".45" stop-color="#c8774a"/><stop offset="1" stop-color="#7a3c1c"/></linearGradient>
-      <linearGradient id="pr${seed}" x1="0" x2="1"><stop offset="0" stop-color="#9c5530"/><stop offset=".45" stop-color="#d68b5c"/><stop offset="1" stop-color="#874424"/></linearGradient></defs>
-      <ellipse cx="${cx}" cy="${potBot + 1}" rx="${(potR - potL) / 2 + 2}" ry="3.5" fill="rgba(0,0,0,.35)"/>
-      <path d="M${potL + 3} ${potTop + 8} L${potR - 3} ${potTop + 8} L${potR - 8} ${potBot} L${potL + 8} ${potBot} Z" fill="url(#pt${seed})"/>
-      <rect x="${potL}" y="${potTop}" width="${potR - potL}" height="9" rx="2" fill="url(#pr${seed})"/>
-      <rect x="${potL}" y="${potTop}" width="${potR - potL}" height="2" rx="1" fill="#e9a57a" opacity=".6"/>
-      <ellipse cx="${cx}" cy="${potTop + 1.5}" rx="${(potR - potL) / 2 - 3}" ry="2.2" fill="#3a2414"/>`;
-    return `<svg viewBox="0 0 170 720" width="170" height="720" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${s}${pot}${top}</svg>`;
-  }
-  const cab = document.querySelector(".cabinet");
-  if (!cab) return;
-  const l = document.createElement("div"); l.className = "pothos left"; l.innerHTML = svg(11);
-  const rr = document.createElement("div"); rr.className = "pothos right"; rr.innerHTML = svg(29);
-  cab.appendChild(l); cab.appendChild(rr);
-})();
 
 
 /* ---------- 一覧表の読み込み ---------- */
