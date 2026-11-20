@@ -94,6 +94,14 @@
     box-shadow:0 0 0 1px rgba(0,0,0,.25), 3px 6px 10px rgba(0,0,0,.6);transform:perspective(600px) rotateX(5deg);transform-origin:bottom}
   .easel .ledge{position:absolute;z-index:2;left:6%;right:6%;bottom:12%;height:7%;border-radius:2px;
     background:linear-gradient(180deg,#d39159,#a8652f 60%,#86491d);box-shadow:0 3px 4px rgba(0,0,0,.5)}
+  /* ===== 飾りの段（イーゼルの絵・人形） ===== */
+  .row{--gap:clamp(14px,3vw,26px);gap:var(--gap)}
+  .wide{grid-column:1/-1;display:flex;justify-content:center;align-items:flex-end}
+  .wide .decor{width:calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols))}
+  .dolls{height:calc((100% - (var(--cols) - 1) * var(--gap)) / var(--cols) * 125 / 142)}
+  .dolls-wrap{width:100%;aspect-ratio:auto;display:flex;justify-content:center;align-items:flex-end;
+    height:calc(((min(100vw, 1100px) - 20px - 2 * clamp(12px,2.8vw,22px) - 2 * clamp(12px,3vw,28px)) - (var(--cols) - 1) * var(--gap)) / var(--cols) * 125 / 142)}
+  .dolls-wrap img{height:92%;width:auto;max-width:100%;object-fit:contain;filter:drop-shadow(4px 6px 4px rgba(0,0,0,.6));pointer-events:none}
   .feet{display:flex;justify-content:space-between;padding:0 4%}
   .feet i{width:clamp(26px,7vw,44px);height:12px;border-radius:0 0 8px 8px;background:linear-gradient(180deg,#5e3817,#3e230d)}
 
@@ -319,6 +327,7 @@
 <script>
 (() => {
 "use strict";
+const DOLLS_IMG = "dolls.png"; // 下の段に飾る人形
 const DECOR_IMG = "decor.jpg"; // 棚の空いた場所に飾る絵
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -482,12 +491,20 @@ function renderShelf() {
     return `<button class="jacket ${on && audio.paused ? "paused" : ""}" data-open="${a.id}" aria-label="${esc(a.title)} を開く">
       ${caseHtml(a)}${on ? `<span class="playing-badge"><i></i><i></i><i></i></span>` : ""}</button>`;
   });
-  if (albums.length) items.push(`<div class="decor"><div class="easel"><span class="mast"></span><img src="${DECOR_IMG}" alt="" onerror="this.closest('.decor').remove()"><span class="ledge"></span></div></div>`);
-  const rows = Math.max(MIN_ROWS, Math.ceil(items.length / cols));
+  // CDの段の下に、イーゼルの絵の段、その下に人形の段
+  const extras = albums.length ? [
+    `<div class="wide"><div class="decor"><div class="easel"><span class="mast"></span><img src="${DECOR_IMG}" alt="" onerror="this.closest('.decor').remove()"><span class="ledge"></span></div></div></div>`,
+    `<div class="wide dolls-wrap"><img src="${DOLLS_IMG}" alt="" onerror="this.remove()"></div>`
+  ] : [];
+  const cdRows = Math.max(1, Math.ceil(items.length / cols));
+  const rows = Math.max(MIN_ROWS, cdRows + extras.length);
   let html = "";
   for (let r = 0; r < rows; r++) {
-    const part = items.slice(r * cols, r * cols + cols);
-    html += bay(part.join("") + fill(cols - part.length), r === rows - 1);
+    let inner;
+    if (r < cdRows) { const part = items.slice(r * cols, r * cols + cols); inner = part.join("") + fill(cols - part.length); }
+    else if (r - cdRows < extras.length) inner = extras[r - cdRows] + fill(0);
+    else inner = fill(cols);
+    html += bay(inner, r === rows - 1);
   }
   $("#shelf").innerHTML = html;
 }
